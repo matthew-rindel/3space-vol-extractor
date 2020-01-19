@@ -10,13 +10,13 @@ importFilenames = sys.argv[1:]
 
 for importFilename in importFilenames:
 
-    print "reading " + importFilename
+    print("reading " + importFilename)
     try:
         with open(importFilename, "rb") as input_fd:
             rawData = input_fd.read()
 
         destDir = importFilename.replace(".rmf", "").replace(".RMF", "")
-        searchName = destDir.split("/")[-1].split("\\")[-1]
+        searchName = destDir.split("/")[-1].split("\\")[-1].upper()
         searchNameLower = searchName.lower()
         searchDir = destDir.replace(searchName, "")
 
@@ -31,25 +31,29 @@ for importFilename in importFilenames:
             raise ValueError("RMF file header not correct")
         archiveNames = []
         for i in range(header[2]):
-            filenameIndex = rawData.find(searchNameLower, offset)
+            filenameIndex = rawData.find(str.encode(searchNameLower), offset)
             if filenameIndex == -1:
-                filenameIndex = rawData.find(searchName, offset)
-            filenameEndIndex = rawData.find(".", filenameIndex) + sizeOfExtension
+                filenameIndex = rawData.find(str.encode(searchName), offset)
+            filenameEndIndex = rawData.find(b".", filenameIndex) + sizeOfExtension
             archiveNames.append(rawData[filenameIndex:filenameEndIndex])
             offset = filenameEndIndex + 1
         for name in archiveNames:
+            name = name.decode("utf-8")
             offset = 0
-
-            if os.path.isfile(searchDir + name) is False:
+            #TODO searchDir + name used to be here. Why did I write it like that?
+            if os.path.isfile(name) is False:
                 name = name.upper()
 
-            if os.path.isfile(searchDir + name) is False:
+            #TODO same as above
+            if os.path.isfile(name) is False:
                 continue
-            name = searchDir + name
-            print "reading " + name
+
+            #TODO same again as above
+            #name = searchDir + name
+            print("reading " + name)
             with open(name, "rb") as input_fd:
                 rawData = input_fd.read()
-            print "getting file info for " + name
+            print("getting file info for " + name)
             files = processFiles.getFileinfo(rawData, offset)
             destDir = name.replace(".", "-")
             if not os.path.exists(destDir):
@@ -57,11 +61,11 @@ for importFilename in importFilenames:
 
             for index, file in enumerate(files):
                 filename, fileOffset, fileLength = file
-                filename = filename.split("\0")[0]
-                print "writing " + destDir + "/" + filename
-                with open(destDir + "/" + filename,"w") as newFile:
+                filename = filename.split(b"\0")[0]
+                print("writing " + destDir + "/" + filename.decode("utf-8"))
+                with open(destDir + "/" + filename.decode("utf-8"),"wb") as newFile:
                         newFileByteArray = bytearray(rawData[fileOffset:fileOffset + fileLength])
                         newFile.write(newFileByteArray)
 
     except Exception as e:
-        print e
+        print(e)

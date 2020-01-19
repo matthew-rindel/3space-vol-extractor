@@ -9,7 +9,7 @@ importFilenames = sys.argv[1:]
 
 for importFilename in importFilenames:
 
-    print "reading " + importFilename
+    print("reading " + importFilename)
     try:
         with open(importFilename, "rb") as input_fd:
             rawData = input_fd.read()
@@ -24,19 +24,19 @@ for importFilename in importFilenames:
         itemFmt = "<7L"
 
         header = struct.unpack_from(headerFmt, rawData, offset)
-        if "VOL" not in header[0]:
+        if b"VOL" not in header[0]:
             raise ValueError("File header is not VOL as expected")
-        if "volh" not in header[2]:
+        if b"volh" not in header[2]:
             raise ValueError("File header does not have volh as expected")
-        if "vols" not in header[4]:
+        if b"vols" not in header[4]:
             raise ValueError("File header does not have vols as expected")
         offset += struct.calcsize(headerFmt)
 
-        print len(rawData)
+        print(len(rawData))
         for val in header:
-            print val
+            print(val)
         files = []
-        nextIndex = rawData.find("\0", offset)
+        nextIndex = rawData.find(b"\0", offset)
         while nextIndex != -1:
             length = nextIndex - offset
             if length <= 0 or length > 15:
@@ -45,7 +45,7 @@ for importFilename in importFilenames:
             (filename, ) = struct.unpack_from(fileFmt, rawData, offset)
             files.append(filename)
             offset += struct.calcsize(fileFmt) + 1
-            nextIndex = rawData.find("\0", offset)
+            nextIndex = rawData.find(b"\0", offset)
         offset = rawData.find(volIndexHeaderTag, offset)
         (volIndexHeader, unk1) = struct.unpack_from(volIndexHeaderFmt, rawData, offset)
 
@@ -70,24 +70,23 @@ for importFilename in importFilenames:
         if not os.path.exists(destDir):
     	    os.makedirs(destDir)
         for index, info in enumerate(fileInfo):
-
             if index > 10:
                 break
             offset = info[1]
             (fileHeader, fileLengthRaw) = struct.unpack_from(fileHeaderFmt, rawData, offset)
             (fileLength,) = struct.unpack("<L", fileLengthRaw[:-1] + "\0")
             offset += struct.calcsize(fileHeaderFmt)
-            if fileHeader == "VBLK":
-                print "writing " + destDir + "/" + info[0] + " " + str(fileLength)
+            if fileHeader == b"VBLK":
+                print("writing " + destDir + "/" + info[0].decode("utf-8") + " " + str(fileLength))
                 endOffset = len(rawData)
                 if index + 1 < len(fileInfo):
                     endOffset = fileInfo[index + 1][1]
-                print (offset - struct.calcsize(fileHeaderFmt))
-                print (endOffset, offset + fileLength)
-                with open(destDir + "/" + info[0],"w") as shapeFile:
+                print((offset - struct.calcsize(fileHeaderFmt)))
+                print((endOffset, offset + fileLength))
+                with open(destDir + "/" + info[0].decode("utf-8"),"wb") as shapeFile:
         		        newFileByteArray = bytearray(rawData[offset:endOffset])
         		        shapeFile.write(newFileByteArray)
 
 
     except Exception as e:
-        print e
+        print(e)
